@@ -122,54 +122,56 @@ impl Game {
             play2.get_elemental(&self).stats.spe,
         );
 
-        let player1 = &self.players[0].team[self.players[0].current_elemental].movements
-            [play1.movement as usize];
+        let player1_info = (
+            0,
+            self.players[0].current_elemental,
+            play1.movement as usize,
+        );
+        let player2_info = (
+            1,
+            self.players[1].current_elemental,
+            play2.movement as usize,
+        );
 
-        let player2 = &self.players[1].team[self.players[1].current_elemental].movements
-            [play2.movement as usize];
-
-        // version easy
-        if player1.pp <= 0 || player2.pp <= 0 {
+        // Check PP
+        if self.players[0].team[player1_info.1].movements[player1_info.2].pp <= 0
+            || self.players[1].team[player2_info.1].movements[player2_info.2].pp <= 0
+        {
             return Err(error!(GameErrorCode::NotEnoughPP));
         }
 
         if spe1 > spe2 {
-            // self.run_action(player1, 0)?;
-            // self.run_action(player2, 1)?;
+            self.run_action(player1_info)?;
+            self.run_action(player2_info)?;
         } else {
-            // self.run_action(player2, 1)?;
-            // self.run_action(player1, 0)?;
+            self.run_action(player2_info)?;
+            self.run_action(player1_info)?;
         }
 
         Ok(())
     }
 
-    fn run_action(&mut self, movement: MovementInfo, id: u8) -> Result<()> {
+    fn run_action(&mut self, info: (usize, usize, usize)) -> Result<()> {
+        let (id, elemental_index, movement_index) = info;
+        let movement = &self.players[id].team[elemental_index].movements[movement_index];
+
+
         if movement.accuracy.is_some() && random() > movement.accuracy.unwrap() as i8 {
             return Ok(());
         }
 
-        let dmg = dmg_formula(movement);
+        let dmg = dmg_formula(movement.accuracy, movement.power);
 
-        let target = (id + 1) % 2;
+        let target = (id + 1) % 2; // the other player is the target
 
         self.do_dmg_to_player(dmg, target)?;
 
-        // accuracy
-        // si la accuracy del jugador es != None y accuracy <  random -> miss = False/True
-        // si move_choice == DeterministicMoveChoice
-        // miss = move_choice.miss // pero si la calculo antes para que quiero pisarla con esto?
-        // if miss true:
-        // pierde el movimiento
+        
 
-        // damage
-        // dmg = calcula el damage con una formula -> funcion aparte
-        // le resta el dmg al otrole
-        // esta el dmg al otro jugador
         Ok(())
     }
 
-    fn do_dmg_to_player(&mut self, dmg: u8, target: u8) -> Result<()> {
+    fn do_dmg_to_player(&mut self, dmg: u8, target: usize) -> Result<()> {
         let player = &mut self.players[target as usize];
         let elemental = &mut player.team[player.current_elemental];
 
@@ -186,17 +188,17 @@ impl Game {
 fn random() -> i8 {
     4
 }
-fn dmg_formula(movement: MovementInfo) -> u8 {
+fn dmg_formula(accuracy: Option<u8>, power: Option<u8>) -> u8 {
     // u128 dmg = floor(  0.75 * accuracy *  power + 1 )
 
-    let power = if movement.power.is_some() {
-        movement.power.unwrap()
+    let power = if power.is_some() {
+        power.unwrap()
     } else {
         return 0;
     };
 
-    let accuracy = if movement.accuracy.is_some() {
-        movement.accuracy.unwrap()
+    let accuracy = if accuracy.is_some() {
+        accuracy.unwrap()
     } else {
         100
     };
