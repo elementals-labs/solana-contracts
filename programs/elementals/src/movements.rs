@@ -3,6 +3,7 @@ use std::u8;
 use anchor_lang::prelude::*;
 use strum_macros::EnumString;
 
+#[derive(Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub struct MovementInfo {
     pub movement: Movement,
     pub m_type: MovementType,
@@ -33,12 +34,15 @@ pub enum MovementType {
     Bug,
     Neutral,
 }
+
+#[derive(Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub enum MovementCategory {
     Status,
     Physical,
     Special,
 }
 
+#[derive(Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub enum Effect {
     Damage { amount: u8 },
     Heals { amount: u8 },
@@ -57,6 +61,7 @@ pub enum Relations {
     Normal,
 }
 
+#[derive(Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub enum Stats {
     Special,
     Speed,

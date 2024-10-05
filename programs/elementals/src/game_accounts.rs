@@ -81,7 +81,7 @@ pub struct Player {
 pub struct Elemental {
     pub name: String,
     pub stats: Stats,
-    pub movements: [Movement; 4],
+    pub movements: [MovementInfo; 4],
     pub is_alive: bool,
     pub status: Status,
 }
@@ -102,9 +102,7 @@ impl UserAction {
     }
 
     pub fn get_movement(&self, game: &Game) -> MovementInfo {
-        self.get_elemental(game).movements[self.movement as usize]
-            .clone()
-            .get_info()
+        self.get_elemental(game).movements[self.movement as usize].clone()
     }
 }
 
@@ -119,13 +117,89 @@ impl Game {
             self.play_buffer[1].as_ref().unwrap(),
         );
 
-        let (mov1, mov2) = (play1.get_movement(&self), play2.get_movement(&self));
-
         let (spe1, spe2) = (
             play1.get_elemental(&self).stats.spe,
             play2.get_elemental(&self).stats.spe,
         );
 
+        let player1 = &self.players[0].team[self.players[0].current_elemental].movements
+            [play1.movement as usize];
+
+        let player2 = &self.players[1].team[self.players[1].current_elemental].movements
+            [play2.movement as usize];
+
+        // version easy
+        if player1.pp <= 0 || player2.pp <= 0 {
+            return Err(error!(GameErrorCode::NotEnoughPP));
+        }
+
+        if spe1 > spe2 {
+            // self.run_action(player1, 0)?;
+            // self.run_action(player2, 1)?;
+        } else {
+            // self.run_action(player2, 1)?;
+            // self.run_action(player1, 0)?;
+        }
+
         Ok(())
     }
+
+    fn run_action(&mut self, movement: MovementInfo, id: u8) -> Result<()> {
+        if movement.accuracy.is_some() && random() > movement.accuracy.unwrap() as i8 {
+            return Ok(());
+        }
+
+        let dmg = dmg_formula(movement);
+
+        let target = (id + 1) % 2;
+
+        self.do_dmg_to_player(dmg, target)?;
+
+        // accuracy
+        // si la accuracy del jugador es != None y accuracy <  random -> miss = False/True
+        // si move_choice == DeterministicMoveChoice
+        // miss = move_choice.miss // pero si la calculo antes para que quiero pisarla con esto?
+        // if miss true:
+        // pierde el movimiento
+
+        // damage
+        // dmg = calcula el damage con una formula -> funcion aparte
+        // le resta el dmg al otrole
+        // esta el dmg al otro jugador
+        Ok(())
+    }
+
+    fn do_dmg_to_player(&mut self, dmg: u8, target: u8) -> Result<()> {
+        let player = &mut self.players[target as usize];
+        let elemental = &mut player.team[player.current_elemental];
+
+        elemental.stats.hp = elemental.stats.hp.saturating_sub(dmg as u8);
+
+        if elemental.stats.hp == 0 {
+            elemental.is_alive = false;
+        }
+
+        Ok(())
+    }
+}
+
+fn random() -> i8 {
+    4
+}
+fn dmg_formula(movement: MovementInfo) -> u8 {
+    // u128 dmg = floor(  0.75 * accuracy *  power + 1 )
+
+    let power = if movement.power.is_some() {
+        movement.power.unwrap()
+    } else {
+        return 0;
+    };
+
+    let accuracy = if movement.accuracy.is_some() {
+        movement.accuracy.unwrap()
+    } else {
+        100
+    };
+
+    ((75 * accuracy as u128 * power as u128 + 1) / 100) as u8
 }

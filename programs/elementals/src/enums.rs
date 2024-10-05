@@ -19,4 +19,6 @@ pub enum GameErrorCode {
     WaitingForCommits,
     #[msg("Invalid hash")]
     InvalidHash,
+    #[msg("Not enough PP")]
+    NotEnoughPP,
 }

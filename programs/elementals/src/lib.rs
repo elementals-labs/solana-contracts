@@ -9,6 +9,7 @@ use anchor_lang::solana_program::keccak::{hashv, Hash};
 use enums::*;
 use events::*;
 use game_accounts::*;
+use movements::{Movement, Status};
 
 declare_id!("4spD8zfoTFJDDbijBSgxxB8JsXfLx1jSBGx9K73hBgJz");
 
@@ -17,13 +18,13 @@ pub mod elementals_battle {
 
     use super::*;
 
-    pub fn register_to_play(ctx: Context<RegisterPlayer>, team: [Elemental; 3]) -> Result<()> {
+    pub fn register_to_play(ctx: Context<RegisterPlayer>, team: ElementalTeamInput) -> Result<()> {
         let queue = &mut ctx.accounts.queue;
         let payer = &ctx.accounts.payer;
 
         let registration = Registration {
             player: payer.key(),
-            team,
+            team: team.into(),
         };
 
         queue.players.push(registration);
@@ -181,5 +182,31 @@ pub fn get_user_id(game: &Game, player: Pubkey) -> Result<usize> {
         Ok(1)
     } else {
         return Err(error!(GameErrorCode::IncorrectUser));
+    }
+}
+
+#[derive(Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
+pub struct ElementalTeamInput {
+    elementals: [ElementalInput; 3],
+}
+
+#[derive(Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
+pub struct ElementalInput {
+    name: String,
+    stats: Stats,
+    movements: [Movement; 4],
+    is_alive: bool,
+    status: Status,
+}
+
+impl Into<[Elemental; 3]> for ElementalTeamInput {
+    fn into(self) -> [Elemental; 3] {
+        self.elementals.map(|input| Elemental {
+            name: input.name,
+            stats: input.stats,
+            movements: input.movements.map(|movement| movement.get_info()),
+            is_alive: input.is_alive,
+            status: input.status,
+        })
     }
 }
