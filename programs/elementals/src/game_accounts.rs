@@ -81,6 +81,7 @@ pub struct Player {
 pub struct Elemental {
     pub name: String,
     pub stats: Stats,
+    pub starting_stats: Stats,
     pub movements: [MovementInfo; 4],
     pub is_alive: bool,
     pub status: Status,
@@ -153,27 +154,30 @@ impl Game {
 
     fn run_action(&mut self, info: (usize, usize, usize)) -> Result<()> {
         let (id, elemental_index, movement_index) = info;
-        let movement = &self.players[id].team[elemental_index].movements[movement_index];
+        let accuracy = self.players[id].team[elemental_index].movements[movement_index].accuracy;
+        // let power = self.players[id].team[elemental_index].movements[movement_index].power;
+        let effect = self.players[id].team[elemental_index].movements[movement_index]
+            .effect
+            .clone();
 
-        if movement.accuracy.is_some() && random() > movement.accuracy.unwrap() as i8 {
+        if accuracy.is_some() && random() > accuracy.unwrap() as i8 {
             return Ok(());
         }
 
-        let dmg = dmg_formula(movement.accuracy, movement.power);
-
         let target = (id + 1) % 2; // the other player is the target
 
-        self.do_dmg_to_player(dmg, target)?;
-        //self.handle_effects(movement.effect, id)?;
+        self.handle_effects(effect, id, target, accuracy)?;
 
         Ok(())
     }
 
-    fn do_dmg_to_player(&mut self, dmg: u8, target: usize) -> Result<()> {
+    fn do_dmg_to_player(&mut self, acc: u8, dmg: u8, target: usize) -> Result<()> {
+        let calculated_dmg = dmg_formula(acc, dmg);
+
         let player = &mut self.players[target as usize];
         let elemental = &mut player.team[player.current_elemental as usize];
 
-        elemental.stats.hp = elemental.stats.hp.saturating_sub(dmg as u8);
+        elemental.stats.hp = elemental.stats.hp.saturating_sub(calculated_dmg as u8);
 
         if elemental.stats.hp == 0 {
             elemental.is_alive = false;
@@ -182,7 +186,79 @@ impl Game {
         Ok(())
     }
 
-    fn handle_effects(&mut self, effect: Option<Effect>, player: usize) -> Result<()> {
+    fn heal_player(&mut self, amount: u8, player: usize) -> Result<()> {
+        let player = &mut self.players[player];
+        let elemental = &mut player.team[player.current_elemental as usize];
+
+        let heal = elemental.stats.hp.saturating_add(amount);
+
+        elemental.stats.hp = if heal > elemental.starting_stats.hp {
+            elemental.starting_stats.hp
+        } else {
+            heal
+        };
+
+        Ok(())
+    }
+
+    fn handle_effects(
+        &mut self,
+        effect: Option<Effect>,
+        player: usize,
+        other_player: usize,
+        accuracy: Option<u8>,
+    ) -> Result<()> {
+        let Some(effect) = effect else {
+            return Ok(());
+        };
+
+        let accuracy = if accuracy.is_some() {
+            accuracy.unwrap()
+        } else {
+            100
+        };
+
+        use Effect::*;
+        match effect {
+            Damage { amount } => self.do_dmg_to_player(accuracy, amount, other_player)?,
+            Heals { amount } => self.heal_player(amount, player)?,
+            StatusCondition { condition } => {
+                self.players[other_player].team
+                    [self.players[other_player].current_elemental as usize]
+                    .status = condition
+            }
+            SelfStatModifier { stat, .. } => {
+                let player = &mut self.players[player];
+                let _elemental = &mut player.team[player.current_elemental as usize];
+
+                match stat {
+                    crate::movements::Stats::Special => todo!(),
+                    crate::movements::Stats::Speed => todo!(),
+                }
+            }
+            OpponentStatModifier { stat, .. } => {
+                let player = &mut self.players[other_player];
+                let _elemental = &mut player.team[player.current_elemental as usize];
+
+                match stat {
+                    crate::movements::Stats::Special => todo!(),
+                    crate::movements::Stats::Speed => todo!(),
+                }
+            }
+            HighCriticalHitRatio => todo!(),
+            HealAndStatusCondition { amount, condition } => {
+                self.heal_player(amount, player)?;
+                self.players[player].team[self.players[player].current_elemental as usize].status =
+                    condition
+            }
+            Recharge => { /* Someday */ }
+            SelfDestruct => {
+                self.players[player].team[self.players[player].current_elemental as usize]
+                    .is_alive = false
+            }
+            ChangeElemental { elemental } => self.players[player].current_elemental = elemental,
+        };
+
         Ok(())
     }
 }
@@ -191,20 +267,6 @@ fn random() -> i8 {
     4
 }
 
-fn dmg_formula(accuracy: Option<u8>, power: Option<u8>) -> u8 {
-    // u128 dmg = floor(  0.75 * accuracy *  power + 1 )
-
-    let power = if power.is_some() {
-        power.unwrap()
-    } else {
-        return 0;
-    };
-
-    let accuracy = if accuracy.is_some() {
-        accuracy.unwrap()
-    } else {
-        100
-    };
-
+fn dmg_formula(accuracy: u8, power: u8) -> u8 {
     ((75 * accuracy as u128 * power as u128 + 1) / 100) as u8
 }

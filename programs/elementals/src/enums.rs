@@ -5,6 +5,7 @@ pub enum GameStatus {
     Playing,
     Winner(Pubkey),
     Closed,
+    Abandoned,
 }
 
 #[error_code]

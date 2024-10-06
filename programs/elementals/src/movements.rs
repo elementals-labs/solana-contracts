@@ -40,6 +40,7 @@ pub enum MovementCategory {
     Status,
     Physical,
     Special,
+    Change,
 }
 
 #[derive(Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
@@ -53,12 +54,7 @@ pub enum Effect {
     HealAndStatusCondition { amount: u8, condition: Status },
     Recharge,
     SelfDestruct,
-}
-
-pub enum Relations {
-    Strong,
-    Weak,
-    Normal,
+    ChangeElemental { elemental: u8 },
 }
 
 #[derive(Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
@@ -135,6 +131,8 @@ pub enum Movement {
     FlameSpiral,
     #[strum(serialize = "Phantom Glare")]
     PhantomGlare,
+    #[strum(serialize = "Switch Elemental")]
+    SwitchElemental(u8),
 }
 
 impl Movement {
@@ -418,6 +416,15 @@ impl Movement {
                 effect: Some(StatusCondition {
                     condition: Confusion,
                 }),
+            },
+            SwitchElemental(i) => MovementInfo {
+                movement: SwitchElemental(*i),
+                m_type: Neutral,
+                category: Change,
+                power: None,
+                accuracy: None,
+                pp: 0,
+                effect: Some(ChangeElemental { elemental: *i }),
             },
         }
     }

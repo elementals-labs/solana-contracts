@@ -203,7 +203,8 @@ impl Into<[Elemental; 3]> for ElementalTeamInput {
     fn into(self) -> [Elemental; 3] {
         self.elementals.map(|input| Elemental {
             name: input.name,
-            stats: input.stats,
+            stats: input.stats.clone(),
+            starting_stats: input.stats.clone(),
             movements: input.movements.map(|movement| movement.get_info()),
             is_alive: input.is_alive,
             status: input.status,
