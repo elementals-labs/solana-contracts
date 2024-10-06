@@ -4,7 +4,7 @@ mod game_accounts;
 mod movements;
 
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::keccak::{hashv, Hash};
+use anchor_lang::solana_program::hash::{hashv, Hash};
 
 use enums::*;
 use events::*;
@@ -18,121 +18,31 @@ pub mod elementals {
 
     use super::*;
 
-    pub fn test_register_to_play(ctx: Context<RegisterPlayer>, name: String) -> Result<()> {
-        let elemental_example = ElementalInput {
-            name: "Fire Elemental".to_string(),
-            stats: Stats {
-                hp: 100,
-                atk: 10,
-                def: 10,
-                spa: 10,
-                spd: 10,
-                spe: 10,
-            },
-            movements: [
-                Movement::AquaBind,
-                Movement::AquaBind,
-                Movement::AquaBind,
-                Movement::AquaBind,
-            ],
-            is_alive: true,
-            status: Status::Normal,
-        };
-
-        let team = ElementalTeamInput {
-            elementals: [
-                elemental_example.clone(),
-                elemental_example.clone(),
-                elemental_example.clone(),
-            ],
-        };
+    pub fn initialize_queue(ctx: Context<InitializeQueue>, name: String) -> Result<()> {
         let queue = &mut ctx.accounts.queue;
-        let payer = &ctx.accounts.payer;
-
-        let registration = Registration {
-            player: payer.key(),
-            team: team.into(),
-        };
-
-        queue.players.push(registration);
-
-        emit!(PlayerRegistered {
-            player: payer.key(),
-        });
-
-        if queue.players.len() == 2 {
-            let room_id = queue.last_room_id;
-            queue.last_room_id = room_id;
-
-            let player1 = queue.players[0].player;
-            let player2 = queue.players[1].player;
-
-            let players = [
-                Player {
-                    pubkey: player1,
-                    current_elemental: 0,
-                    team: queue.players[0].team.clone(),
-                },
-                Player {
-                    pubkey: player2,
-                    current_elemental: 0,
-                    team: queue.players[1].team.clone(),
-                },
-            ];
-
-            let game_type = "elementals".to_string();
-
-            let cpi_accs = cpi::accounts::CreateGame {
-                game: ctx.accounts.game.clone().to_account_info(),
-                payer: ctx.accounts.payer.clone(),
-                system_program: ctx.accounts.system_program.clone().to_account_info(),
-            };
-
-            let game_context = CpiContext::new(ctx.accounts.game.to_account_info(), cpi_accs);
-
-            cpi::create_game(game_context, queue.last_room_id, players, game_type)?;
-
-            queue.last_room_id += 1;
-            queue.players = vec![];
-        }
-
-        Ok(())
-    }
-
-    pub fn test_creation(ctx: Context<Initialize>) -> Result<()> {
-        /*
-        let cpi_accs = cpi::accounts::RegisterPlayer {
-            queue: ctx.accounts.queue.clone().to_account_info(),
-            payer: ctx.accounts.payer.clone().to_account_info(),
-            system_program: ctx.accounts.system_program.clone().to_account_info(),
-            game: ctx.accounts.game.clone().to_account_info(),
-        };
-
-        let ctx_call = CpiContext::new(ctx.accounts.game.clone().to_account_info(), cpi_accs);
-
-        cpi::register_to_play(ctx_call, team)?; */
-
+        queue.players = Vec::new();
+        queue.last_room_id = 0;
         Ok(())
     }
 
     pub fn register_to_play(ctx: Context<RegisterPlayer>, team: ElementalTeamInput) -> Result<()> {
         let queue = &mut ctx.accounts.queue;
-        let payer = &ctx.accounts.payer;
+        let player = &ctx.accounts.player;
 
         let registration = Registration {
-            player: payer.key(),
+            player: player.key(),
             team: team.into(),
         };
 
         queue.players.push(registration);
 
         emit!(PlayerRegistered {
-            player: payer.key(),
+            player: player.key(),
         });
 
         if queue.players.len() == 2 {
             let room_id = queue.last_room_id;
-            queue.last_room_id = room_id;
+            queue.last_room_id += 1;
 
             let player1 = queue.players[0].player;
             let player2 = queue.players[1].player;
@@ -152,98 +62,87 @@ pub mod elementals {
 
             let game_type = "elementals".to_string();
 
-            let cpi_accs = cpi::accounts::CreateGame {
-                game: ctx.accounts.game.clone().to_account_info(),
-                payer: ctx.accounts.payer.clone(),
-                system_program: ctx.accounts.system_program.clone().to_account_info(),
-            };
+            // Instead of CPI, we'll create the game directly here
+            let game = &mut ctx.accounts.game;
+            game.user_actions = Vec::new();
+            game.room_id = room_id;
+            game.players = players.clone();
+            game.status = GameStatus::Playing;
+            game.game_type = game_type.clone();
 
-            let game_context = CpiContext::new(ctx.accounts.game.to_account_info(), cpi_accs);
+            emit!(GameCreated {
+                room_id,
+                game_type,
+                players
+            });
 
-            cpi::create_game(game_context, queue.last_room_id, players, game_type)?;
-
-            queue.last_room_id += 1;
-            queue.players = vec![];
+            queue.players.clear();
         }
 
         Ok(())
     }
+    /*  I COULD NOT PASS A HASHED BORSH SERIALIZED STRUCT TO THE PROGRAM. yet.
+       pub fn commit_play(ctx: Context<Playing>, play: [u8; 32]) -> Result<()> {
+           let game = &mut ctx.accounts.game;
+           if game.status != GameStatus::Playing {
+               return Err(error!(GameErrorCode::FinishedGame));
+           }
 
-    pub fn create_game(
-        ctx: Context<CreateGame>,
-        room_id: u128,
-        players: [Player; 2],
-        game_type: String,
-    ) -> Result<()> {
+           let player = &mut ctx.accounts.payer;
+
+           let active_player_key: Pubkey = player.key();
+
+           let id = if game.players[0].pubkey == active_player_key {
+               0
+           } else if game.players[1].pubkey == active_player_key {
+               1
+           } else {
+               return Err(error!(GameErrorCode::IncorrectUser));
+           };
+
+           game.hash_buffer[id] = Some(play);
+
+           emit!(HashCommited {
+               room_id: game.room_id,
+               player: active_player_key,
+               hash: play
+           });
+
+           Ok(())
+       }
+    */
+    pub fn play_game(ctx: Context<Playing>, play: UserAction /* , nonce: u8*/) -> Result<()> {
         let game = &mut ctx.accounts.game;
-        game.user_actions = vec![];
-        game.room_id = room_id;
-        game.players = players.clone();
-        game.status = GameStatus::Playing;
-        game.game_type = (*game_type).to_string();
-        emit!(GameCreated {
-            room_id,
-            game_type,
-            players
-        });
-        Ok(())
-    }
-
-    /// play is the hash of the play w/ a nonce
-    pub fn commit_play(ctx: Context<Playing>, play: [u8; 32]) -> Result<()> {
-        let game = &mut ctx.accounts.game;
-        if game.status != GameStatus::Playing {
-            return Err(error!(GameErrorCode::FinishedGame));
-        }
-
-        let player = &mut ctx.accounts.payer;
-
-        let active_player_key: Pubkey = player.key();
-
-        let id = if game.players[0].pubkey == active_player_key {
-            0
-        } else if game.players[1].pubkey == active_player_key {
-            1
-        } else {
-            return Err(error!(GameErrorCode::IncorrectUser));
-        };
-
-        game.hash_buffer[id] = Some(play);
-
-        emit!(HashCommited {
-            room_id: game.room_id,
-            player: active_player_key,
-            hash: play
-        });
-
-        Ok(())
-    }
-
-    pub fn play_game(ctx: Context<Playing>, play: UserAction, nonce: u8) -> Result<()> {
-        let mut game = &mut ctx.accounts.game;
 
         if game.status != GameStatus::Playing {
             return Err(error!(GameErrorCode::FinishedGame));
         }
-
-        if game.hash_buffer[0].is_none() || game.hash_buffer[1].is_none() {
-            return Err(error!(GameErrorCode::WaitingForCommits));
-        }
-
-        let mut data_to_hash: Vec<u8> = play.try_to_vec()?;
-        data_to_hash.push(nonce);
-
-        let revealed_hash: Hash = hashv(&[&data_to_hash]);
 
         let player = &mut ctx.accounts.payer;
         let active_player_key: Pubkey = player.key();
 
         let id = get_user_id(game, active_player_key)?;
 
-        check_if_hash_is_the_commited(&mut game, &revealed_hash, id)?;
-        // the hash is ok here, we continue with the game
+        /* This is commit related code, I could not pass the hash to the program yet.
+                if game.hash_buffer[0].is_none() || game.hash_buffer[1].is_none() {
+                    return Err(error!(GameErrorCode::WaitingForCommits));
+                }
 
+                let mut data_to_hash: Vec<u8> = play.try_to_vec()?;
+                data_to_hash.push(nonce);
+
+                let revealed_hash: Hash = hashv(&[&data_to_hash]);
+
+                check_if_hash_is_the_commited(&mut game, &revealed_hash, id)?;
+                // the hash is ok here, we continue with the game
+        */
         game.play_buffer[id] = Some(play.clone());
+
+        emit!(UserPlayRegistered {
+            room_id: game.room_id,
+            player: active_player_key,
+            play: play.clone()
+        });
 
         if !game.both_players_revealed() {
             return Ok(()); // wait for the other player to play
@@ -258,6 +157,7 @@ pub mod elementals {
     }
 }
 
+#[allow(dead_code)]
 fn check_if_hash_is_the_commited(game: &mut Game, hash: &Hash, id: usize) -> Result<()> {
     if game.hash_buffer[id].unwrap() != hash.to_bytes() {
         game.status = GameStatus::Closed;

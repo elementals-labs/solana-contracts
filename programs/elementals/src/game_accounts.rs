@@ -2,73 +2,41 @@ use crate::{enums::*, get_user_id, movements::*};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
-#[instruction(game_type: String)]
-pub struct CreateGame<'info> {
-    #[account(
-        init,
-        payer = payer,
-        space = 900,
-        seeds = [b"game".as_ref(), game_type.as_ref()],
-        bump
-    )]
-    pub game: Account<'info, Game>,
-    #[account(mut)]
-    /// CHECK:
-    pub payer: AccountInfo<'info>,
-    pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
 #[instruction(name: String)]
-pub struct RegisterPlayer<'info> {
-    #[account(mut)]
-    /// CHECK:
-    pub payer: AccountInfo<'info>,
-    #[account(
-        init,
-        payer = payer,
-        space = 900,
+pub struct InitializeQueue<'info> {
+    #[account(init, 
+        payer = payer, 
+        space = 2000,
         seeds = [b"queue".as_ref(), name.as_ref()],
         bump
     )]
     pub queue: Account<'info, Queue>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
-    #[account(
-        init,
-        payer = payer,
-        space = 900,
-        seeds = [b"game".as_ref(), name.as_ref()],
-        bump
-    )]
-    pub game: Account<'info, Game>,
 }
 
 #[derive(Accounts)]
-#[instruction(game_type: String)]
-pub struct Initialize<'info> {
-    pub system_program: Program<'info, System>,
-    /// CHECK:
-    #[account(mut)]
-    pub payer: AccountInfo<'info>,
-
-    #[account(
-        init,
-        payer = payer,
-        space = 900,
-        seeds = [b"game".as_ref(), game_type.as_ref()],
-        bump
-    )]
+pub struct CreateGame<'info> {
+    #[account(init, payer = player, space = 10000)]
     pub game: Account<'info, Game>,
-    #[account(
-        init,
-        payer = payer,
-        space = 900,
-        seeds = [b"queue".as_ref(), game_type.as_ref()],
-        
-        bump
-    )]
+    #[account(mut)]
     pub queue: Account<'info, Queue>,
+    #[account(mut)]
+    pub player: Signer<'info>,
+    pub system_program: Program<'info, System>,
 }
+#[derive(Accounts)]
+pub struct RegisterPlayer<'info> {
+    #[account(mut)]
+    pub queue: Account<'info, Queue>,
+    #[account(mut)]
+    pub player: Signer<'info>,
+    #[account(init_if_needed, payer = player, space = 10000, seeds = [b"game", queue.key().as_ref()], bump)]
+    pub game: Account<'info, Game>,
+    pub system_program: Program<'info, System>,
+}
+
 
 #[account]
 pub struct Queue {
@@ -116,8 +84,6 @@ pub struct Player {
     pub current_elemental: u8,
     pub team: [Elemental; 3],
 }
-
-// team[nth_elemental][nth_movement] = info del movement
 
 #[derive(Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub struct Elemental {

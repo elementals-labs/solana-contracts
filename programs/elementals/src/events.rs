@@ -26,3 +26,10 @@ pub struct HashCommited {
 pub struct PlayerRegistered {
     pub player: Pubkey,
 }
+
+#[event]
+pub struct UserPlayRegistered {
+    pub room_id: u128,
+    pub player: Pubkey,
+    pub play: UserAction,
+}
