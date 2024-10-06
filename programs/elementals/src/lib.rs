@@ -14,7 +14,7 @@ use movements::{Movement, Status};
 declare_id!("4spD8zfoTFJDDbijBSgxxB8JsXfLx1jSBGx9K73hBgJz");
 
 #[program]
-pub mod elementals_battle {
+pub mod elementals {
 
     use super::*;
 

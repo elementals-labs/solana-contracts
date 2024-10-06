@@ -10,7 +10,7 @@ name = "elementals"
 
 [features]
 default = ["cpi"]
-cpi = ["no-entrypoint"]
+cpi = []
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
@@ -18,7 +18,7 @@ idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
 anchor-lang = "0.30.1"
-soar ={ git = "https://github.com/magicblock-labs/SOAR", package = "soar-cpi"}
+soar = { git = "https://github.com/magicblock-labs/SOAR", package = "soar-cpi"}
 itertools = "0.13.0"
 strum = "0.26"
 strum_macros = "0.26"

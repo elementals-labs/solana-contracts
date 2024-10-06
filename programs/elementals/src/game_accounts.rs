@@ -28,6 +28,13 @@ pub struct RegisterPlayer<'info> {
     pub game: AccountInfo<'info>,
 }
 
+#[derive(Accounts)]
+pub struct Initialize<'info> {
+    /// CHECK:
+    pub payer: AccountInfo<'info>,
+    pub queue: Account<'info, Queue>,
+}
+
 #[account]
 pub struct Queue {
     pub players: Vec<Registration>,
