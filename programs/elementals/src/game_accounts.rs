@@ -64,14 +64,14 @@ pub struct Registration {
 #[derive(Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub struct UserAction {
     pub player: Pubkey,
-    pub elemental: usize,
-    pub movement: usize,
+    pub elemental: u8,
+    pub movement: u8,
 }
 
 #[derive(Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub struct Player {
     pub pubkey: Pubkey,
-    pub current_elemental: usize,
+    pub current_elemental: u8,
     pub team: [Elemental; 3],
 }
 
@@ -123,19 +123,19 @@ impl Game {
         );
 
         let player1_info = (
-            0,
-            self.players[0].current_elemental,
+            0 as usize,
+            self.players[0].current_elemental as usize,
             play1.movement as usize,
         );
         let player2_info = (
-            1,
-            self.players[1].current_elemental,
+            1 as usize,
+            self.players[1].current_elemental as usize,
             play2.movement as usize,
         );
 
         // Check PP
         if self.players[0].team[player1_info.1].movements[player1_info.2].pp <= 0
-            || self.players[1].team[player2_info.1].movements[player2_info.2].pp <= 0
+            || self.players[1].team[player2_info.1 as usize].movements[player2_info.2].pp <= 0
         {
             return Err(error!(GameErrorCode::NotEnoughPP));
         }
@@ -155,7 +155,6 @@ impl Game {
         let (id, elemental_index, movement_index) = info;
         let movement = &self.players[id].team[elemental_index].movements[movement_index];
 
-
         if movement.accuracy.is_some() && random() > movement.accuracy.unwrap() as i8 {
             return Ok(());
         }
@@ -165,15 +164,14 @@ impl Game {
         let target = (id + 1) % 2; // the other player is the target
 
         self.do_dmg_to_player(dmg, target)?;
-
-        
+        //self.handle_effects(movement.effect, id)?;
 
         Ok(())
     }
 
     fn do_dmg_to_player(&mut self, dmg: u8, target: usize) -> Result<()> {
         let player = &mut self.players[target as usize];
-        let elemental = &mut player.team[player.current_elemental];
+        let elemental = &mut player.team[player.current_elemental as usize];
 
         elemental.stats.hp = elemental.stats.hp.saturating_sub(dmg as u8);
 
@@ -183,11 +181,16 @@ impl Game {
 
         Ok(())
     }
+
+    fn handle_effects(&mut self, effect: Option<Effect>, player: usize) -> Result<()> {
+        Ok(())
+    }
 }
 
 fn random() -> i8 {
     4
 }
+
 fn dmg_formula(accuracy: Option<u8>, power: Option<u8>) -> u8 {
     // u128 dmg = floor(  0.75 * accuracy *  power + 1 )
 
