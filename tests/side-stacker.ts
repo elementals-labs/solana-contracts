@@ -12,16 +12,49 @@ describe("elementals", () => {
 
   const program = anchor.workspace.Elementals as Program<Elementals>;
   const payer = (program.provider as anchor.AnchorProvider).wallet;
-  const player2 = new PublicKey("6hjxohPktokzTrTENiF1hJ6tnV7V81uS9cHktpMosgcq");
+  const system_program = SystemProgram.programId;
+
+  const stats = {
+    hp: 5,
+    atk: 5,
+    def: 5,
+    spa: 5, // Special Attack
+    spd: 5, // Special Defense
+    spe: 5, // Speed
+  };
+
+  const elemental = {
+    name: "JUANCITO",
+    stats: stats,
+    movements: ["Mindflare", "Mindflare", "Mindflare", "Mindflare"],
+    isAlive: true,
+    status: { Normal: {} },
+  };
+
+  const teamInput = { elementals: [elemental, elemental, elemental] };
+  const [queue, _] = web3.PublicKey.findProgramAddressSync(
+    [Buffer.from(anchor.utils.bytes.utf8.encode("elementals"))],
+    program.programId
+  );
+
+  //
 
   it("Is initialized!", async () => {
     // Add your test here.
     const tx = await program.methods
-      .registerToPlay()
+      .testRegisterToPlay("JUANCITO_PEREZ_EL_JUEGO2")
       .accounts({
         payer: payer.publicKey,
       })
       .rpc();
     console.log("Your transaction signature", tx);
+
+    /*     const tx2 = await program.methods
+      .registerToPlay([elemental, elemental, elemental])
+      .accounts({
+        payer: payer.publicKey,
+      })
+      .rpc();
+    console.log("Your transaction signature", tx); */
   });
 });

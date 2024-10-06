@@ -11,12 +11,109 @@ use events::*;
 use game_accounts::*;
 use movements::{Movement, Status};
 
-declare_id!("4spD8zfoTFJDDbijBSgxxB8JsXfLx1jSBGx9K73hBgJz");
+declare_id!("AfFGKj5Wxm9FY4ZKZZMYxKRbx7zNYYKMmEUxnLfme2CX");
 
 #[program]
 pub mod elementals {
 
     use super::*;
+
+    pub fn test_register_to_play(ctx: Context<RegisterPlayer>, name: String) -> Result<()> {
+        let elemental_example = ElementalInput {
+            name: "Fire Elemental".to_string(),
+            stats: Stats {
+                hp: 100,
+                atk: 10,
+                def: 10,
+                spa: 10,
+                spd: 10,
+                spe: 10,
+            },
+            movements: [
+                Movement::AquaBind,
+                Movement::AquaBind,
+                Movement::AquaBind,
+                Movement::AquaBind,
+            ],
+            is_alive: true,
+            status: Status::Normal,
+        };
+
+        let team = ElementalTeamInput {
+            elementals: [
+                elemental_example.clone(),
+                elemental_example.clone(),
+                elemental_example.clone(),
+            ],
+        };
+        let queue = &mut ctx.accounts.queue;
+        let payer = &ctx.accounts.payer;
+
+        let registration = Registration {
+            player: payer.key(),
+            team: team.into(),
+        };
+
+        queue.players.push(registration);
+
+        emit!(PlayerRegistered {
+            player: payer.key(),
+        });
+
+        if queue.players.len() == 2 {
+            let room_id = queue.last_room_id;
+            queue.last_room_id = room_id;
+
+            let player1 = queue.players[0].player;
+            let player2 = queue.players[1].player;
+
+            let players = [
+                Player {
+                    pubkey: player1,
+                    current_elemental: 0,
+                    team: queue.players[0].team.clone(),
+                },
+                Player {
+                    pubkey: player2,
+                    current_elemental: 0,
+                    team: queue.players[1].team.clone(),
+                },
+            ];
+
+            let game_type = "elementals".to_string();
+
+            let cpi_accs = cpi::accounts::CreateGame {
+                game: ctx.accounts.game.clone().to_account_info(),
+                payer: ctx.accounts.payer.clone(),
+                system_program: ctx.accounts.system_program.clone().to_account_info(),
+            };
+
+            let game_context = CpiContext::new(ctx.accounts.game.to_account_info(), cpi_accs);
+
+            cpi::create_game(game_context, queue.last_room_id, players, game_type)?;
+
+            queue.last_room_id += 1;
+            queue.players = vec![];
+        }
+
+        Ok(())
+    }
+
+    pub fn test_creation(ctx: Context<Initialize>) -> Result<()> {
+        /*
+        let cpi_accs = cpi::accounts::RegisterPlayer {
+            queue: ctx.accounts.queue.clone().to_account_info(),
+            payer: ctx.accounts.payer.clone().to_account_info(),
+            system_program: ctx.accounts.system_program.clone().to_account_info(),
+            game: ctx.accounts.game.clone().to_account_info(),
+        };
+
+        let ctx_call = CpiContext::new(ctx.accounts.game.clone().to_account_info(), cpi_accs);
+
+        cpi::register_to_play(ctx_call, team)?; */
+
+        Ok(())
+    }
 
     pub fn register_to_play(ctx: Context<RegisterPlayer>, team: ElementalTeamInput) -> Result<()> {
         let queue = &mut ctx.accounts.queue;
