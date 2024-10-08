@@ -49,7 +49,7 @@ The game is implemented in Rust using the Solana **Anchor framework**, with the 
 
 ### System interactions diagram
 
-![image](https://github.com/user-attachments/assets/07b1593f-e4ab-416d-be25-8abdf3512cc9)
+![image](https://github.com/user-attachments/assets/a9246fcb-4d62-4cba-9e20-2b7bb2562429)
 
 ## Instructions
 
