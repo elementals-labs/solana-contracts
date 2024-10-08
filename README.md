@@ -1,6 +1,6 @@
 # Elementals - Solana Smart Contract
 
-Welcome to the **Elementals** repository! This is a Solana-based smart contract developed during a hackathon, forming the core of the "Elementals" game. In this turn-based strategy game, players command teams of elementals in battles, each with unique abilities and strategies. The contracts here handle the initialization, player registration, game mechanics, and turn execution.
+Welcome to the **Elementals** repository! This is a Solana-based set of smart contracts developed during the [Solana Radar Global Hackathon](https://www.colosseum.org/radar), constituting the core of the "Elementals" game. In this turn-based strategy game, players command teams of elementals in battles, each with unique abilities and strategies. The contracts here handle the initialization, player registration, game mechanics, and turn execution.
 
 ## Table of Contents
 
