@@ -47,6 +47,52 @@ The game is implemented in Rust using the Solana **Anchor framework**, with the 
 2. **register_to_play**: Registers a player to join the queue and waits for another player to start a game.
 3. **play_game**: Allows players to make a move and progresses the game based on the input provided by the player.
 
+### System interactions diagram
+
+graph TD;
+    subgraph Frontend
+        F[Frontend]
+    end
+
+    subgraph Wallet_Connection
+        WC[Wallet Connection]
+    end
+
+    subgraph Main_Contract
+        MC[MainContract]
+        init[init()]
+        register[register()]
+        playGame[playGame()]
+    end
+
+    subgraph Key_Management
+        KM[KeyManagement]
+        buy[buy()]
+        sell[sell()]
+        use[use()]
+    end
+
+    F --> WC
+
+    F --> MC
+    MC --> init
+    MC --> register
+    MC --> playGame
+
+    F --> KM
+    KM --> buy
+    KM --> sell
+    KM --> use
+
+    register --> use
+    use -->|Ok| register
+
+    buy --> F:::transfer
+    sell --> F:::transfer
+
+    classDef transfer fill:#f9f,stroke:#333,stroke-width:2px;
+
+
 ## Instructions
 
 ### 1. **initialize_queue**
