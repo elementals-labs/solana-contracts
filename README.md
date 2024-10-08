@@ -15,7 +15,6 @@ Welcome to the **Elementals** repository! This is a Solana-based set of smart co
 - [Instructions](#instructions)
 - [Events](#events)
 - [How to Contribute](#how-to-contribute)
-- [License](#license)
 
 ## Overview
 
