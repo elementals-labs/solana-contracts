@@ -49,27 +49,7 @@ The game is implemented in Rust using the Solana **Anchor framework**, with the 
 
 ### System interactions diagram
 
-```mermaid
-graph TD;
-    F[Frontend] --> WC[Wallet Connection]
-
-    F --> MC[MainContract]
-    MC --> init[init()]
-    MC --> register[register()]
-    MC --> playGame[playGame()]
-
-    F --> KM[KeyManagement]
-    KM --> buy[buy()]
-    KM --> sell[sell()]
-    KM --> use[use()]
-
-    register --> use
-    use -->|Ok| register
-
-    buy -->|transfer()| F
-    sell -->|transfer()| F
-```
-
+![image](https://github.com/user-attachments/assets/07b1593f-e4ab-416d-be25-8abdf3512cc9)
 
 ## Instructions
 
