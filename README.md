@@ -51,47 +51,23 @@ The game is implemented in Rust using the Solana **Anchor framework**, with the 
 
 ```mermaid
 graph TD;
-    subgraph Frontend
-        F[Frontend]
-    end
+    F[Frontend] --> WC[Wallet Connection]
 
-    subgraph Wallet_Connection
-        WC[Wallet Connection]
-    end
+    F --> MC[MainContract]
+    MC --> init[init()]
+    MC --> register[register()]
+    MC --> playGame[playGame()]
 
-    subgraph Main_Contract
-        MC[MainContract]
-        init[init()]
-        register[register()]
-        playGame[playGame()]
-    end
-
-    subgraph Key_Management
-        KM[KeyManagement]
-        buy[buy()]
-        sell[sell()]
-        use[use()]
-    end
-
-    F --> WC
-
-    F --> MC
-    MC --> init
-    MC --> register
-    MC --> playGame
-
-    F --> KM
-    KM --> buy
-    KM --> sell
-    KM --> use
+    F --> KM[KeyManagement]
+    KM --> buy[buy()]
+    KM --> sell[sell()]
+    KM --> use[use()]
 
     register --> use
     use -->|Ok| register
 
-    buy --> F:::transfer
-    sell --> F:::transfer
-
-    classDef transfer fill:#f9f,stroke:#333,stroke-width:2px;
+    buy -->|transfer()| F
+    sell -->|transfer()| F
 ```
 
 
