@@ -3,7 +3,7 @@
 Welcome to the **Elementals** repository! This is a Solana-based set of smart contracts developed during the [Solana Radar Global Hackathon](https://www.colosseum.org/radar), constituting the core of the "Elementals" game. In this turn-based strategy game, players command teams of elementals in battles, each with unique abilities and strategies. The contracts here handle the initialization, player registration, game mechanics, and turn execution.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/076b1553-6fcb-42b8-a145-aced96b0f377" alt="A Zephyra and a Torchy battle each other in the forest arena" />
+  <img src="https://github.com/user-attachments/assets/f6c99310-eb29-4cf3-882a-bb06e1dddc0e" alt="A Terron and a Torchy battle each other in the City Arena" />
 </p>
 
 
