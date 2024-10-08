@@ -49,6 +49,7 @@ The game is implemented in Rust using the Solana **Anchor framework**, with the 
 
 ### System interactions diagram
 
+```mermaid
 graph TD;
     subgraph Frontend
         F[Frontend]
@@ -91,6 +92,7 @@ graph TD;
     sell --> F:::transfer
 
     classDef transfer fill:#f9f,stroke:#333,stroke-width:2px;
+```
 
 
 ## Instructions
