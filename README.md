@@ -49,7 +49,7 @@ The game is implemented in Rust using the Solana **Anchor framework**, with the 
 
 ### System interactions diagram
 
-![diagram](https://github.com/user-attachments/assets/9d34695d-1c80-4fbe-91c8-704b8838324d)
+![diagram](https://github.com/user-attachments/assets/f9efd80a-f50a-4e8b-9425-4ab1f9a8826d)
 
 ## Instructions
 
@@ -63,7 +63,8 @@ pub fn initialize_queue(ctx: Context<InitializeQueue>, name: String) -> Result<(
 
 ### 2. **register_to_play**
 
-Registers a player for the next available game. Once two players are registered, the game starts automatically.
+  Registers a player for the next available game. Once two players are registered, the game starts automatically.
+
 
 ```rust
 pub fn register_to_play(ctx: Context<RegisterPlayer>, team: ElementalTeamInput) -> Result<()>
